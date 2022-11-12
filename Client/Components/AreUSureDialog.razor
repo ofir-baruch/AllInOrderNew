@@ -1,0 +1,37 @@
+﻿@*חלונית פופ אפ*@
+<MudDialog>
+    <DialogContent>
+        @*לפה נכנס התוכן מהעמוד*@
+        <MudText>@ContentText</MudText>
+    </DialogContent>
+    @*פה כל הפעולות של החלונית*@
+    <DialogActions>
+        <MudButton Class="CancelBtn" OnClick="Cancel">לא</MudButton>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="DoIt">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code { //  פרמטר שמקבל את כל ההגדרות והפרמטרים שנתנו בדף
+            [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+            //    פרמטר שמקבל את הטקסט של התוכן
+            [Parameter] public string ContentText { get; set; }
+            //פרמטר שמקבל את התוכן של כפתור אישור
+            [Parameter] public string ButtonText { get; set; }
+            //פרמטר שמקבל את הצבע של כפתור אישור
+            [Parameter] public Color Color { get; set; }
+
+
+            //סגירת החלונית והחזרת תשובות
+
+            private void Cancel()
+            {
+                MudDialog.Cancel();
+            }
+
+
+            private void DoIt()
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+            } }

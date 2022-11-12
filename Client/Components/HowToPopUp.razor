@@ -1,0 +1,67 @@
+﻿@*חלונית פופ אפ*@
+<style>
+    .mud-dialog {
+        width: 42%;
+        height: 50%;
+        font-size: 13pt;
+        text-align: center;
+    }
+
+    h2.mud-typography.mud-typography-h2.mud-inherit-text {
+        margin-top: 4%;
+        color: #795548;
+    }
+
+    div.mud-dialog-actions button.mud-button.mud-button-text.mud-button-text-default.mud-button-text-size-medium.mud-ripple {
+        width: 10%;
+        margin-top: -93px;
+        border-radius: 9px;
+        position: relative;
+        top: -211px;
+        right: 3px;
+        font-size: 24px;
+        font-weight: bold;
+        font-family: Calibri;
+        color: #795548;
+    }
+
+    .mud-button-text {
+        margin-top: -4%;
+        margin-left: 1%;
+    }
+ 
+</style>
+
+@*חלונית פופ אפ*@
+<MudDialog>
+    <DialogContent>
+        <MudContainer width="1280">
+            <h2 style="position: relative; top: -28px; ">איך משחקים</h2>
+            <div class="responsiveIframe1">
+                <iframe style="height: 196px; width:450px;" src="https://www.youtube.com/embed/kGpGAdWHFh0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="ClosePopUp" OnClick="Cancel">X</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    
+    //  פרמטר שמקבל את כל ההגדרות והפרמטרים שנתנו בדף
+            [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+            //    פרמטר שמקבל את הטקסט של התוכן
+            [Parameter] public string ContentText { get; set; }
+            //פרמטר שמקבל את התוכן של כפתור אישור
+            [Parameter] public string ButtonText { get; set; }
+            //פרמטר שמקבל את הצבע של כפתור אישור
+            [Parameter] public Color Color { get; set; }
+
+            //סגירת החלונית והחזרת תשובות
+
+            private void Cancel()
+            {
+                MudDialog.Cancel();
+            } }

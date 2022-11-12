@@ -1,0 +1,75 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject NavigationManager navToGamePage
+
+<style>
+    .mud-input.mud-input-outlined.mud-input-adorned-start {
+        position: absolute;
+        right: 7%;
+        border-color: none;
+    }
+
+    .mud-input > input.mud-input-root-outlined, div.mud-input-slot.mud-input-root-outlined {
+        padding: 18.5px 14px;
+        direction: ltr;
+    }
+</style>
+
+
+<div style="margin-bottom: 200px; margin-right: 400px; width: 350px; height: 200px; padding-bottom: 100px;">
+
+    <span style="color: #795548; font-size: 18px; font-weight: bold;">כתובת מייל</span>
+    <div style="outline: #795548;">
+        <MudTextField Style="width: 100%; background-color: whitesmoke;" @bind-Value="InputMail" Variant="Variant.Outlined"></MudTextField>
+    </div>
+    <br />
+    <p style="color: red; font-size: 14px; font-weight: bold; margin-right: 95px; margin-top:-10px;">@msg</p>
+    <br />
+    <div style="margin-right: 140px; border-radius: 20px;">
+        <MudButton Variant="Variant.Filled" @onclick="UserLogin" Color="Color.Primary">כניסה</MudButton>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    string InputMail = "";
+    string msg = "";
+
+    async Task UserLogin()
+    {
+        if (string.IsNullOrEmpty(InputMail) == false)
+        {
+            var getResponse = await Http.GetAsync("api/users/" + InputMail);
+
+
+            if (getResponse.IsSuccessStatusCode == true)
+            {
+                int UserId = getResponse.Content.ReadFromJsonAsync<int>().Result;
+                navToGamePage.NavigateTo("./Games/" + UserId);
+            }
+
+            else
+            {
+                string Error = getResponse.Content.ReadAsStringAsync().Result;
+
+                if (Error == "User not found")
+                {
+                    msg = "כתובת מייל לא קיימת במערכת";
+                }
+                else
+                {
+                    msg = "התרחשה תקלת שרת";
+                }
+            }
+
+        }
+    }
+
+
+
+
+
+}

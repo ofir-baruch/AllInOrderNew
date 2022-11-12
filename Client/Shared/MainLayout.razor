@@ -1,0 +1,93 @@
+﻿@inherits LayoutComponentBase
+@inject IDialogService Dialog
+@inject IDialogService DialogService
+
+
+<MudRTLProvider RightToLeft="true">
+    <MudThemeProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
+    <MudLayout>
+        <nav>
+            <div class="mainNav">
+                <div>
+                    <div>
+                        <img id="logoNav" src="/images/Asset 8.png" />
+                    </div>
+                    <p id="logoTXT">הכל בסדר</p>
+                </div>
+                <div class="navMenu">
+                    <MudButton @onclick="About" Variant="Variant.Text" Style="color: #795548">
+                        אודות
+                    </MudButton>
+                    <MudButton @onclick="HowTo" Variant="Variant.Text" Style="color: #795548">
+                        ?איך משחקים
+                    </MudButton>
+
+                    <a href="/AllOk.html">למשחק</a>
+                </div>
+            </div>
+        </nav>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+</MudRTLProvider>
+
+
+
+<MudThemeProvider Theme="MyCustomTheme" />
+
+
+@code{
+
+
+    MudTheme MyCustomTheme = new MudTheme()
+    {
+        Palette = new Palette()
+        {
+            Primary = Colors.Brown.Default,
+            Secondary = Colors.Green.Accent4,
+            AppbarBackground = Colors.Red.Default,
+
+        },
+
+        PaletteDark = new Palette()
+        {
+            Primary = Colors.Brown.Lighten1
+        },
+
+        LayoutProperties = new LayoutProperties()
+        {
+            DrawerWidthLeft = "260px",
+            DrawerWidthRight = "300px",
+            DefaultBorderRadius = "8px",
+
+
+        }
+    };
+
+
+
+    private void About()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<AboutPopUp>("", options);
+
+
+    }
+
+    private void HowTo()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        DialogService.Show<HowToPopUp>("", options);
+
+
+    }
+
+   
+}
+
+
+
+

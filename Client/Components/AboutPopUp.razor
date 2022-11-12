@@ -1,0 +1,55 @@
+﻿@*חלונית פופ אפ*@
+<style>
+    .mud-dialog {
+        width: 42%;
+        height: 40%;
+        font-size: 13pt;
+        text-align: center;
+    }
+
+    h2.mud-typography.mud-typography-h2.mud-inherit-text {
+        margin-top: 4%;
+    }
+
+    div.mud-dialog-actions button.mud-button.mud-button-text.mud-button-text-default.mud-button-text-size-medium.mud-ripple {
+        width: 10%;
+        height: 29px;
+        border-radius: 9px;
+        position: relative;
+        top: -165px;
+        right: 3px;
+        font-size: 24px;
+        font-weight: bold;
+        font-family: Calibri;
+        color: #795548;
+        margin-top: -18px;
+    }
+    .mud-button-text {
+        margin-top: -4%;
+        margin-left: 1%;
+    }
+</style>
+
+<MudDialog>
+    <DialogContent>
+        <h2>אודות</h2>
+        <div class="About">
+            <p>אפיון ופיתוח: שחף אגמים, אופיר ברוך ושניר פיינשטיין </p>
+            <p>אופיין ופותח במסגרת פרויקט משותף לקורסים: סביבות לימוד אינטראקטיביות 1+2, תכנות  2 ואינטראקציה ואנימציה 1+2 תשפ"ב</p>
+            <div class="LinkToHit">  <a href="https://www.hit.ac.il/telem/overview">לינק לפקולטת טכנולוגיות למידה</a> </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="ClosePopUp" OnClick="Cancel">X</MudButton>
+      
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    void Cancel() => MudDialog.Cancel();
+}
+
+
+

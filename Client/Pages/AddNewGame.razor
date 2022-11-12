@@ -1,0 +1,540 @@
+﻿@page "/AddNewGame/{userId:int}/{GameId:int}"
+@*@page "/AddNewGame"*@
+@using AllinOrder_Shahaf_Ofir_Snir.Shared.Entities
+@using System.Net.Http.Json
+@inject HttpClient httpClient
+@inject HttpClient Http
+@inject NavigationManager navBack
+@inject IDialogService DialogService
+@*הגדרות המשחק*@
+<div Style="background-color: transparent;  border-color: transparent; width: 550px; margin-top: -25px; margin-right: 10px; position:fixed; " hiden>
+    <div style="display:inline;">
+        <MudTextField Class="d-inline-block" Style="width: 260px; height:40px; background-color: transparent; " T="string" Counter="35" MaxLength="35" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(MaxCharacters))" Label="שם המשחק" Variant="Variant.Outlined" Lines="2" Clearable="true" @bind-Value="CurrentGame.GameName" />
+    </div>
+    <div style="display:inline">
+        <MudTooltip Text="אם הערך בשדה שווה לאפס השאלות יהיו ללא הגבלת זמן">
+            @*<MudFab Icon="@Icons.Filled.PriorityHigh" Color="Color.Primary" Size="Size.Small"/>*@
+            <MudNumericField Style="width: 94px; height: 40px; background-color: none;" @bind-Value="CurrentGame.QuestionTime" Label="אורך שאלה (בשניות)" Variant="Variant.Outlined" Step="1" />
+        </MudTooltip>
+    </div>
+    <div style="display:inline">
+        <MudTooltip Text="במידה והמשחק מכיל ניקוד סמנו את התיבה הזו">
+            <MudCheckBox @bind-Checked="@WithNikud" Color="Color.Primary" Label="שימוש בתוכן מנוקד" @onclick="()=>WithNikudTxt(WithNikud)"></MudCheckBox>
+        </MudTooltip>
+    </div>
+</div>
+<br />
+<br />
+<div>
+    <div>
+        <div Class="Qtxt" Style="position: fixed; border:hidden;">
+            <div style="margin-top: 5px; ">
+                <MudTextField   Clearable="true" Style=" width: 280px; height: 140px; background-color: none; outline-style:solid; outline-color: #795548; outline-width: medium; border-radius: 10px;" @bind-Value="CurrentQuestion.QuestionText" T="string" Counter="@LengthQ" MaxLength="@LengthQ" Immediate="true" Validation="@(new Func<string, IEnumerable<string>>(MaxCharactersQ))" Label="גזע השאלה" Variant="Variant.Outlined" Lines="3"  />
+            </div>
+            @* העלאת תמונה *@
+            <InputFile id="FileInputID" OnChange="UploadFile" hidden />
+            @if (CurrentQuestion.QuestionPic != null)
+            {
+                <img src="@CurrentQuestion.QuestionPic" width="150" style="border-style: dotted; border-color: #795548; position: fixed; margin-right: 66px; margin-top: -6px;"/>
+                <MudButton  Style="margin-right: 96px; position: fixed; margin-top: 149px;" Variant="Variant.Filled" EndIcon="@Icons.Material.Outlined.Image" Color="Color.Primary" @onclick="DeleteImage" HtmlTag="label">מחיקת</MudButton>
+
+            }
+            else
+            {
+                <MudButton  Style="margin-right: 96px; position: fixed; " Variant="Variant.Filled" EndIcon="@Icons.Material.Outlined.Image" Color="Color.Primary" for="FileInputID" HtmlTag="label">העלאת</MudButton>
+
+            }
+        </div>
+    </div>
+</div>
+@* כפתורי שמירה וביטול *@
+<div class="BtnGame" style="position: fixed; margin-top: 440px; margin-right: 480px;">
+    <MudButton Variant="Variant.Filled" @onclick="SaveGame" Color="Color.Primary">שמירת משחק</MudButton>
+    <MudButton Variant="Variant.Filled" @onclick="SaveQuestion" Color="Color.Primary">שמירת שאלה</MudButton>
+    <MudLink Style="cursor:pointer;" @onclick="BackToGamePage" Typo="Typo.body2">חזור לעמוד המשחקים</MudLink>
+
+</div>
+
+@* פריטים *@
+<aside style="margin-top: -98px; position: fixed; height: 547px;  flex-direction: column; display: flex; margin-right: 1000px;">
+
+    @foreach (Item i in CurrentQuestion.QuestionItems)
+    {
+        <EditIcons ItemsCount="@CurrentQuestion.QuestionItems.Count" item="@i" withNikud="@WithNikud" ondelete="()=>deleteItemInQ(i)"></EditIcons>
+    }
+</aside>
+<div class="hosafaBtn" style="position:fixed; margin-right:950px; margin-top: 340px;">
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" @onclick="Additems" Disabled="CurrentQuestion.QuestionItems.Count > 5" Size="Size.Small" />
+</div>
+<div class="kazeBtn" style="position: fixed; margin-right: 925px; line-height:0px; margin-top: -95px;">
+    <MudTextField  Class="Kathe" Style="width: 90px; height: 35px; padding-inline-start:0px; border-radius:10px; background-color: whitesmoke; outline-style:solid; outline-color: #795548; outline-width: medium;" @bind-Value="CurrentQuestion.FirstText" Variant="Variant.Outlined" Label="ערכי קצה"></MudTextField>
+</div>
+
+<div class="kazeBtn" style="position:fixed; margin-right:925px; line-height:0px; margin-top: 385px;">
+    <MudTextField  Class="Kathe" Style="height: 35px;  width: 90px; padding-inline-start:0px; border-radius:10px; background-color: whitesmoke; outline-style:solid; outline-color: #795548; outline-width: medium;" @bind-Value="CurrentQuestion.LastText" Variant="Variant.Outlined" Label="ערכי קצה"></MudTextField>
+</div>
+
+
+@*טבלת שאלות*@
+<div>
+    <MudTable Items="@QDataFromDb" Hover="true" Height="400px" ma Breakpoint="Breakpoint.Sm" Virtualize="true" FixedHeader="true" Style="position: fixed; margin-top:15px" Class="TableQ">
+        <HeaderContent>
+            <MudTh Style="font-weight: bold; color: #795548; text-align: center;">עריכה</MudTh>
+            <MudTh Style="font-weight: bold; color: #795548; text-align: center; ">השאלה</MudTh>
+            <MudTh Style="font-weight: bold; color: #795548; text-align: center;">מספר פריטים</MudTh>
+            <MudTh Style="font-weight: bold; color: #795548; text-align: center;">מחיקה</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            @if (context.ID == CurrentQuestion.ID)
+            {
+                <MudTd Style="background-color: #795548;" DataLabel="עריכה"> <MudIconButton Icon="@Icons.Filled.Edit" Color="Color.Primary" OnClick="()=>EditQuestion(context)" Size="Size.Small" /></MudTd>
+                <MudTd Style="color: whitesmoke; background-color: #795548;" DataLabel="השאלה">@context.QuestionText</MudTd>
+                <MudTd Style="color: whitesmoke; background-color: #795548; text-align: center;" DataLabel="מספר פריטים">@context.QuestionItems.Count</MudTd>
+                <MudTd Style="color: whitesmoke;" DataLabel="מחיקה"><MudIconButton Icon="@Icons.Filled.DeleteOutline" Color="Color.Primary" OnClick="()=>DeleteQuestion(context)" Size="Size.Small" /></MudTd>
+            }
+            else
+            {
+                <MudTd DataLabel="עריכה"> <MudIconButton Icon="@Icons.Filled.Edit" Color="Color.Primary" OnClick="()=>EditQuestion(context)" Size="Size.Small" /></MudTd>
+                <MudTd Style="color: #795548;" DataLabel="השאלה">@context.QuestionText</MudTd>
+                <MudTd Style="color: #795548; text-align: center;" DataLabel="מספר פריטים">@context.QuestionItems.Count</MudTd>
+                <MudTd DataLabel="מחיקה"><MudIconButton Icon="@Icons.Filled.DeleteOutline" Color="Color.Primary" OnClick="()=>DeleteQuestion(context)" Size="Size.Small" /></MudTd>
+            }
+
+        </RowTemplate>
+    </MudTable>
+</div>
+@code {
+
+    [Parameter]
+    public int userId { get; set; }
+    [Parameter]
+    public int GameId { get; set; }
+
+
+    public decimal QuestionTimeSec { get; set; }
+    public bool WithNikud { get; set; } = false;
+    public int LengthQ = 120;
+    public string QuestionTxt { get; set; }
+    Question FirstLast = new Question();
+    Item Items = new Item();
+    Game CurrentGame = new Game();
+    Game singleGame = new Game();
+    Question singleQuestion = new Question();
+    List<Game> GamesList = new List<Game>() { };
+    Question CurrentQuestion = new Question();
+    Game gameDataFromDb = new Game();
+    List<Question> QDataFromDb = new List<Question>();
+
+
+    Game addnewGame = new Game();
+
+    //טעינת עמוד עריכת משחק
+    protected async override Task OnInitializedAsync()
+    {
+        CurrentQuestion.AddemptyItems();
+        var GetResponse = await Http.GetAsync("api/Games/GameData" + "/" + GameId);
+        if (GetResponse.IsSuccessStatusCode == true)
+        {
+            Console.WriteLine();
+            CurrentGame = GetResponse.Content.ReadFromJsonAsync<Game>().Result;
+            Console.WriteLine(CurrentGame.GameQuestions.Count);
+            QDataFromDb = CurrentGame.GameQuestions;
+            Console.WriteLine("העמוד מוצג");
+
+        }
+        else
+        {
+            msg = "";
+            Console.WriteLine("אין עמוד");
+        }
+    }
+
+
+    //פונקציה קאונטר שם המשחק
+    private IEnumerable<string> MaxCharacters(string ch)
+    {
+        if (!string.IsNullOrEmpty(ch) && 35 < ch?.Length)
+            yield return "Max 35 characters";
+    }
+
+    //פונקציה שימוש בתוכן מנוקד
+    //מקסימום משחק
+    private IEnumerable<string> MaxCharactersG(string ch)
+    {
+        if (!string.IsNullOrEmpty(ch) && 120 < ch?.Length)
+            yield return "מקסימום 120 תווים";
+    }
+
+    //מקסימום שאלה
+    private IEnumerable<string> MaxCharactersQ(string ch)
+    {
+
+
+        if (!string.IsNullOrEmpty(ch) && LengthQ < ch?.Length)
+        {
+            yield return "מקסימום " + LengthQ + " תווים";
+        }
+    }
+
+
+
+
+    //קוד להעלאת תמונות
+    string myFileImage;
+    long maxFileSize = 4194304;
+
+    private async Task UploadFile(InputFileChangeEventArgs e)
+    {
+        var imageFiles = e.GetMultipleFiles();
+        foreach (var file in imageFiles)
+        {
+            if (file.Size <= maxFileSize)
+            {
+                var buffer = new byte[file.Size];
+                await file.OpenReadStream(maxFileSize).ReadAsync(buffer);
+                var imageBase64 = Convert.ToBase64String(buffer);
+                var saveResponse = await Http.PostAsJsonAsync("api/Photos/upload", imageBase64);
+
+                if (saveResponse.IsSuccessStatusCode == true)
+                {
+                    string resizeUrl = saveResponse.Content.ReadAsStringAsync().Result;
+                    CurrentQuestion.QuestionPic = resizeUrl;
+                    myFileImage = resizeUrl;
+                    Console.WriteLine(resizeUrl);
+                }
+            }
+        }
+    }
+
+
+
+    //קוד למחיקת תמונה
+    string msg;
+    List<string> DeletedImages = new List<string>();
+    private async Task DeleteImage()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = false };
+        DialogOptions disableBackdropClick = new DialogOptions() { DisableBackdropClick = true };
+        var parameters = new DialogParameters();
+        msg = "האם אתה בטוח שאתה רוצה למחוק את התמונה מהמשחק?";
+        parameters.Add("ContentText", msg);
+        parameters.Add("ButtonText", "כן");
+        parameters.Add("Color", Color.Primary);
+        var dialog = DialogService.Show<AreUSureDialog>("", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            DeletedImages.Add(CurrentQuestion.QuestionPic);
+            var saveResponse = await Http.PostAsJsonAsync("api/Photos/deleteImages", DeletedImages);
+
+            if (saveResponse.IsSuccessStatusCode == true)
+            {
+                msg = "התמונה נמחקה בהצלחה";
+                myFileImage = "";
+                CurrentQuestion.QuestionPic = null;
+
+            }
+
+        }
+    }
+
+
+    //שמירת משחק
+    async Task SaveGame()
+    {
+        SaveQuestion();
+        Console.WriteLine(userId);
+        CurrentGame.UserID = userId;
+        if (CurrentGame.ID == 0)
+        {
+            var postResponse = await Http.PostAsJsonAsync("api/Games", CurrentGame);
+            if (postResponse.IsSuccessStatusCode == true)
+            {
+                Game createdGame = postResponse.Content.ReadFromJsonAsync<Game>().Result;
+                GamesList.Add(createdGame);
+                singleGame = new Game();
+                navBack.NavigateTo("./Games" + "/" + userId.ToString());
+                Console.WriteLine("המשחק נשמר");
+
+
+            }
+            else
+            {
+                msg = "";
+                Console.WriteLine("המשחק לא נשמר");
+
+            }
+        }
+        else
+        {
+            var UpdateResponse = await Http.PostAsJsonAsync("api/Games/EditGame", CurrentGame);
+            if (UpdateResponse.IsSuccessStatusCode == true)
+            {
+                Game createdGame = UpdateResponse.Content.ReadFromJsonAsync<Game>().Result;
+                GamesList.Add(createdGame);
+                singleGame = new Game();
+                navBack.NavigateTo("./Games" + "/" + userId.ToString());
+                Console.WriteLine("המשחק התעדכן");
+
+
+            }
+
+            else
+            {
+                msg = "";
+                Console.WriteLine("המשחק לא התעדכן");
+
+            }
+        }
+
+
+    }
+
+
+    private bool validateQ()
+    {
+        if ((CurrentQuestion.QuestionPic == null || CurrentQuestion.QuestionPic == "") && (CurrentQuestion.QuestionText == null  || CurrentQuestion.QuestionText == ""))
+        {
+           Console.WriteLine("אין תוכן בגזע השאלה");
+           return false;
+            
+        }
+        
+        if(CurrentQuestion.FirstText == null || CurrentQuestion.LastText == null || CurrentQuestion.LastText==CurrentQuestion.FirstText || CurrentQuestion.FirstText == "" || CurrentQuestion.LastText == "")
+        {
+           Console.WriteLine("ערכי קצה לא תקינים");
+           return false;
+            
+        }
+       
+        foreach(Item i in CurrentQuestion.QuestionItems)
+        {
+        if(i.ItemContent == null || i.ItemContent == "")
+        {
+            Console.WriteLine("אחד הפריטים ריק");
+            return false;
+            
+
+        }
+        }
+  
+        return true;
+        
+    }
+
+    //שמירת שאלה
+    private async Task SaveQuestion()
+    {
+        if (validateQ())
+        {
+            
+
+            CurrentQuestion.GameID = GameId;
+            Console.WriteLine(CurrentQuestion.ID);
+            if (CurrentQuestion.ID == 0)
+            {
+                var postResponse = await Http.PostAsJsonAsync("api/Question/insertQ/" + userId + "/" + GameId, CurrentQuestion);
+                if (postResponse.IsSuccessStatusCode == true)
+                {
+                    Question createdQ = postResponse.Content.ReadFromJsonAsync<Question>().Result;
+                    Console.WriteLine(QDataFromDb.Count);
+                    QDataFromDb.Add(createdQ);
+                    Console.WriteLine(QDataFromDb.Count);
+                    CurrentQuestion.clearQ();
+                    Console.WriteLine("השאלה נשמר");
+
+                }
+                else
+                {
+                    msg = "";
+                    Console.WriteLine("השאלה לא נשמר");
+
+                }
+            }
+
+            else
+            {
+                var updateResponse = await Http.PostAsJsonAsync("api/Question/EditQuestion/" + userId + "/" + GameId, CurrentQuestion);
+
+                if (updateResponse.IsSuccessStatusCode == true)
+                {
+                    Question createdQ = updateResponse.Content.ReadFromJsonAsync<Question>().Result;
+                    Console.WriteLine(QDataFromDb.Count);
+                    var index = QDataFromDb.FindIndex(q => q.ID == createdQ.ID);
+
+                    if (index != -1)
+                    {
+                        QDataFromDb[index] = createdQ;
+                    }
+                    Console.WriteLine(QDataFromDb.Count);
+                    CurrentQuestion.clearQ();
+                    Console.WriteLine("השאלה התעדכנה");
+
+
+                }
+                else
+                {
+                    msg = "";
+                    Console.WriteLine("השאלה לא התעדכנה");
+
+                }
+
+            }
+        }
+        else
+        {
+            msg = "צריך שיהיה משהו";
+        }
+
+    }
+
+    //מחיקת שאלה
+    async Task DeleteQuestion(Question QtoDelete)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = false };
+        DialogOptions disableBackdropClick = new DialogOptions() { DisableBackdropClick = true };
+        var parameters = new DialogParameters();
+        Console.WriteLine(QtoDelete.QuestionText);
+        msg = "האם ברצונך למחוק את השאלה: " + QtoDelete.QuestionText + " ואת כל הנתונים שבתוכה?";
+        parameters.Add("ContentText", msg);
+        parameters.Add("ButtonText", "כן");
+        parameters.Add("Color", Color.Primary);
+        var dialog = DialogService.Show<AreUSureDialog>("", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var deleteResponse = await Http.DeleteAsync("api/Question/DeleteQuestion" + "/" + userId + "/" + QtoDelete.ID);
+            if (deleteResponse.IsSuccessStatusCode)
+            {
+                //   עדכון נתוני המשתמש שנמצאים בעמוד
+                Console.WriteLine(QDataFromDb.Count);
+                QDataFromDb.RemoveAll(q => q.ID == QtoDelete.ID);
+                Console.WriteLine(QDataFromDb.Count);
+                singleQuestion = new Question();
+                Console.WriteLine("השאלה נמחקה");
+
+
+
+
+                //CurrentGame.GameQuestions.RemoveAll(q => q.ID == QtoDelete.ID);
+
+            }
+
+            else
+            {
+
+                msg = "השאלה לא נמחקה";
+                Console.WriteLine("השאלה לא נמחקה");
+
+
+            }
+
+        }
+
+    }
+
+
+    //חזרת לדף המשחקים
+    private async Task BackToGamePage()
+    {
+        //חלונית וידוא חזרה
+
+        //   לא נסגר בלחיצה על ESC
+        var options = new DialogOptions { CloseOnEscapeKey = false };
+        //   אי אפשר ללחוץ על העמוד מתחת
+        DialogOptions disableBackdropClick = new DialogOptions() { DisableBackdropClick = true };
+        //   אפשרות לשללוח פרמטרים
+        var parameters = new DialogParameters();
+        //   שליחה של טקסט תוכן
+        msg = "האם אתה מעוניין לצאת מעמוד זה בלי לשמור את נתוני המשחק?";
+        parameters.Add("ContentText", msg);
+        //שליחת תוכן כפתור אישור
+        parameters.Add("ButtonText", "כן");
+        //שליחת צבע כפתור אישור
+        parameters.Add("Color", Color.Primary);
+        //   קריאה לפופ אפ ושליחה של כל המידע פלוס כותרת
+        var dialog = DialogService.Show<AreUSureDialog>("", parameters, options);
+
+        //קבלת תשובה מהחלונית
+        var result = await dialog.Result;
+
+        //במידה ולחצו אישור
+        if (!result.Cancelled)
+        {
+            navBack.NavigateTo("./Games/" + userId);
+
+        }
+
+    }
+
+    //פונקציה בדיקת ניקוד
+    private void WithNikudTxt(bool WithNikud)
+    {
+
+        if (WithNikud == true)
+        {
+            WithNikud = false;
+            LengthQ = 120;
+            Console.WriteLine("השתנה לפלס");
+        }
+        else
+        {
+            WithNikud = true;
+            LengthQ = 200;
+            Console.WriteLine("השתנה לטרו");
+        }
+
+    }
+
+    //עריכת שאלה קיימת
+    void EditQuestion(Question QtoEdit)
+    {
+        CurrentQuestion = QtoEdit;
+        SortItems(QtoEdit);
+        CurrentQuestion.AddemptyItems();
+    }
+
+    //מיון פריטים
+    void SortItems(Question objListOrder)
+    {
+        objListOrder.QuestionItems = objListOrder.QuestionItems.OrderBy(o => o.ItemPlace).ToList();
+
+    }
+
+    //הוספת פריט
+    void Additems()
+    {
+
+        Item NewItem = new Item();
+        NewItem.ItemPlace = CurrentQuestion.QuestionItems.Count + 1;
+        CurrentQuestion.QuestionItems.Add(NewItem);
+
+
+    }
+
+    //מחיקת פריט
+    async Task deleteItemInQ(Item item)
+    {
+
+        Console.WriteLine("vvv");
+        Console.WriteLine(item.ID);
+        CurrentQuestion.QuestionItems.RemoveAll(i => i.ItemPlace == item.ItemPlace);
+        Console.WriteLine("הפריט נמחק");
+
+        for (int i = 0; i < CurrentQuestion.QuestionItems.Count; i++)
+        {
+            CurrentQuestion.QuestionItems[i].ItemPlace = i + 1;
+        }
+
+
+
+    }
+
+
+}
+
+
+
+
+
+

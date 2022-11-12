@@ -1,0 +1,239 @@
+﻿@page "/Games/{userID:int}"
+@using AllinOrder_Shahaf_Ofir_Snir.Shared.Entities
+@inject HttpClient Http
+@inject NavigationManager navBack
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<h1 style="color: #795548; margin-right:475px; margin-top: -33px; position: fixed;">המשחקים של @CurrentUser.FirstName @CurrentUser.LastName</h1>
+
+@*כרטיסיות*@
+
+@if (CurrentUser.UserGames != null)
+{
+
+    <div  style=" display: inline-flex; justify-items: flex-end; flex-wrap: wrap !important; max-inline-size: 90%; position: relative; margin-top: 50px; padding-right: 120px;">
+        <div Class="d-flex flex-wrap gap-3" MaxWidth="528px" Elevation="6">
+            @foreach (Game u in CurrentUser.UserGames)
+            {
+            
+                    <MudItem >
+                        <MudCard  MaxWidth="90%" Elevation="0" Style="margin-right: 10px; outline-style:solid; outline-color: #795548; outline-width: medium; border-radius: 10px; height:200px; width:160px;">
+                            <MudCardContent  Style="padding-left: 10px; padding-right: 10px; padding-top: 15px; padding-bottom: 0px; ">
+
+
+                                <MudText><b>@u.GameName</b></MudText>
+                                <MudText Typo="Typo.body2">מספר שאלות @u.GameQuestions.Count</MudText>
+                                <MudText Typo="Typo.body2">קוד המשחק @u.GameCode</MudText>
+
+
+                                <div style="display: flex; flex-wrap: wrap; align-items: center; align-content: space-around; flex-direction: column; justify-content: space-evenly; margin-top: 5px;">
+                                    <MudText Style="inset-inline" Typo="Typo.body2">פורסם</MudText>
+                                    <MudTooltip Text="על מנת לפרסם את המשחק יש ליצור לפחות 10 שאלות">
+                                        <MudCheckBox CheckedChanged="@((bool newState) => PublishGame(u))" Color="Color.Primary" Style="inset-inline" Checked="@u.IsPublish" Disabled="u.GameQuestions.Count < 10"></MudCheckBox>
+                                    </MudTooltip>
+                                </div>
+                                <div>
+                                    <MudCardActions Style="display: flex; flex-wrap: nowrap; justify-content: center; align-content: center; align-items: center; padding-top: 0px;">
+                                         <MudIconButton Icon="@Icons.Filled.DeleteOutline" Color="Color.Default" @onclick="()=>DeleteGame(u)" />
+                                         <MudIconButton Icon="@Icons.Filled.Edit" Color="Color.Default" @onclick="()=>EditGame(u)" />
+                                    </MudCardActions>
+                                </div>
+                            </MudCardContent>
+
+                       
+                       
+                        </MudCard>
+                    </MudItem>
+              
+            }
+        </div>
+    </div>
+
+}
+else
+{
+    <p>@msgCard</p>
+}
+
+<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" @onclick="()=>NavGamePage(singleGame)" />
+
+
+
+
+@code {
+
+    [Parameter]
+    public int userId { get; set; }
+
+    [Parameter]
+    public int GameId { get; set; }
+    Game singleGame = new Game();
+
+
+    User CurrentUser = new User();
+    Game CurrentGame = new Game();
+    string msgCard = "ליצירת משחק חדש לחצו על הפלוס";
+    string msg = "";
+    bool state = false;
+    string publishtxt = "";
+    public bool Open;
+    List<Game> GamesList = new List<Game>() { };
+
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        var getResponse = await Http.GetAsync("api/Games/" + userId);
+        Console.WriteLine("הכרטיסיות מוצגות");
+
+        if (getResponse.IsSuccessStatusCode == true)
+        {
+            CurrentUser = getResponse.Content.ReadFromJsonAsync<User>().Result;
+        }
+        else
+        {
+            string error = getResponse.Content.ReadAsStringAsync().Result;
+            if (error == "User not login" || error == "Empty session")
+            {
+                navBack.NavigateTo("./");
+
+            }
+            else
+            {
+                msg = "התרחשה תקלת שרת";
+            }
+        }
+    }
+
+    //פרסום משחק
+    async Task PublishGame(Game selectedGame)
+    {
+        selectedGame.IsPublish = !selectedGame.IsPublish;
+        Game updatedGame = new Game();
+        var updateResponse = await Http.PostAsJsonAsync("api/Games/UpdatePublish", selectedGame);
+        if (updateResponse.IsSuccessStatusCode == true)
+        {
+
+            updatedGame = updateResponse.Content.ReadFromJsonAsync<Game>
+    ().Result;
+            updatedGame = new Game();
+            Console.WriteLine("השתנה מצב פרסום");
+        }
+        else
+        {
+            string error = updateResponse.Content.ReadAsStringAsync().Result;
+            if (error == "EmptySession")
+            {
+                msg = "התבצע ניתוק";
+            }
+            else
+            {
+                msg = "תקלת שרת";
+            }
+        }
+    }
+
+    void NavGamePage(Game NewGame)
+    {
+
+        navBack.NavigateTo("./AddNewGame/" + userId + "/" + NewGame.ID.ToString());
+
+
+    }
+
+
+    //מעבר לדף עריכת משחק קיים
+    async Task EditGame(Game gameid)
+    {
+        if (gameid.ID != 0)
+        {
+
+            navBack.NavigateTo("./AddNewGame/" + userId + "/" + gameid.ID.ToString());
+
+
+        }
+
+
+    }
+
+    //מחיקת משחק
+    private async Task DeleteGame(Game GameTodelete)
+    {
+        //חלונית ווידוא מחיקה
+
+        //   לא נסגר בלחיצה על ESC
+        var options = new DialogOptions { CloseOnEscapeKey = false };
+        //   אי אפשר ללחוץ על העמוד מתחת
+        DialogOptions disableBackdropClick = new DialogOptions() { DisableBackdropClick = true };
+        //   אפשרות לשללוח פרמטרים
+        var parameters = new DialogParameters();
+        //   שליחה של טקסט תוכן
+        msg = "האם ברצונך למחוק את המשחק ואת השאלות שבתוכו? ";
+        parameters.Add("ContentText", msg);
+        //שליחת תוכן כפתור אישור
+        parameters.Add("ButtonText", "כן");
+        //שליחת צבע כפתור אישור
+        parameters.Add("Color", Color.Primary);
+        //   קריאה לפופ אפ ושליחה של כל המידע פלוס כותרת
+        var dialog = DialogService.Show<AreUSureDialog>("", parameters, options);
+
+        //קבלת תשובה מהחלונית
+        var result = await dialog.Result;
+
+        //במידה ולחצו אישור
+        if (!result.Cancelled)
+        {
+            //מחיקה מבסיס נתונים
+            var deleteResponse = await Http.DeleteAsync("api/Games/DeleteGame" + "/" + userId + "/" + GameTodelete.ID);
+
+
+            if (deleteResponse.IsSuccessStatusCode)
+            {
+                //   עדכון נתוני המשתמש שנמצאים בעמוד
+                GamesList.Remove(singleGame);
+                singleGame = new Game();
+                Console.WriteLine("המשחק נמחק");
+
+
+
+                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.BottomRight;
+                Snackbar.Add("המשחק נמחק", Severity.Success, (options) =>
+                {
+                    options.CloseAfterNavigation = true;
+                }
+                );
+
+
+                CurrentUser.UserGames.RemoveAll(g => g.ID == GameTodelete.ID);
+
+            }
+
+            else
+            {
+
+                msg = "המשחק לא נמחק";
+                Console.WriteLine("המשחק לא נמחק");
+
+
+            }
+
+        }
+
+    }
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
